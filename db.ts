@@ -1,5 +1,6 @@
 
-import Dexie, { Table } from 'dexie';
+// Fix: Use named import { Dexie } instead of default import to ensure correct type inheritance of members like 'version'
+import { Dexie, Table } from 'dexie';
 import { Product, Party, Invoice, CompanyProfile } from './types';
 
 export class AppDatabase extends Dexie {
@@ -10,9 +11,9 @@ export class AppDatabase extends Dexie {
 
   constructor() {
     super('GopiDistributorsDB');
-    // Removed (this as any) cast to ensure correct inheritance and type detection for methods like 'transaction'
+    // Fix: The version method is correctly inherited from Dexie base class when using named imports
     this.version(1).stores({
-      products: '++id, name, hsn, batch', // Indexed fields
+      products: '++id, name, hsn, batch',
       parties: '++id, name, gstin',
       invoices: '++id, invoiceNo, date, partyId',
       settings: '++id'
@@ -22,40 +23,21 @@ export class AppDatabase extends Dexie {
 
 export const db = new AppDatabase();
 
-// Seed initial data if empty
 export const seedDatabase = async () => {
-  const productCount = await db.products.count();
-  if (productCount === 0) {
-    await db.products.bulkAdd([
-      { name: 'Paracetamol 500mg', batch: 'B123', expiry: '2026-12-31', hsn: '3004', gstRate: 12, mrp: 20, purchaseRate: 10, saleRate: 15, stock: 1000, manufacturer: 'Cipla' },
-      { name: 'Azithromycin 500mg', batch: 'AZ09', expiry: '2025-10-20', hsn: '3004', gstRate: 12, mrp: 120, purchaseRate: 80, saleRate: 100, stock: 500, manufacturer: 'Sun Pharma' },
-      { name: 'Vitamin C Chewable', batch: 'VC99', expiry: '2026-05-15', hsn: '3004', gstRate: 5, mrp: 50, purchaseRate: 25, saleRate: 35, stock: 200, manufacturer: 'Abbott' },
-    ]);
-  }
-  
-  const partyCount = await db.parties.count();
-  if (partyCount === 0) {
-    await db.parties.bulkAdd([
-      { name: 'City Medical Store', gstin: '27ABCDE1234F1Z5', address: '123 Main St, Mumbai', phone: '9876543210', dlNo1: 'MH-MZ1-123456', dlNo2: 'MH-MZ2-123456', type: 'WHOLESALE' },
-      { name: 'Wellness Pharmacy', gstin: '27FGHIJ5678K1Z9', address: '456 High St, Pune', phone: '9123456789', dlNo1: 'MH-PZ1-654321', type: 'WHOLESALE' },
-      { name: 'Cash Sale (Retail)', gstin: '', address: '', phone: '', type: 'RETAIL' },
-    ]);
-  }
-
   const settingsCount = await db.settings.count();
   if (settingsCount === 0) {
     await db.settings.add({
-      companyName: 'Gopi Distributors',
-      addressLine1: '123, Pharma Market, Sector 5',
-      addressLine2: 'Mumbai, Maharashtra - 400001',
-      gstin: '27AAAAA0000A1Z5',
-      dlNo1: 'MH-MZ1-000001',
-      dlNo2: 'MH-MZ1-000002',
-      phone: '+91 98765 43210',
-      email: 'info@gopidistributors.com',
-      terms: '1. Goods once sold will not be taken back.\n2. Interest @18% p.a. will be charged if payment is not made within due date.\n3. All disputes subject to Mumbai Jurisdiction.',
+      companyName: 'GOPI DISTRIBUTOR',
+      addressLine1: '74/20/4, Navyug Colony',
+      addressLine2: 'Bhulabhai Park Crossroad, Ahmedabad-22 Ahmedabad',
+      gstin: '24AADPO7411Q1ZE',
+      dlNo1: 'GJ-ADC-AA/1946, GJ-ADC-AA/4967',
+      dlNo2: 'GJ-ADC-AA/1953, GJ-ADC-AA/4856',
+      phone: '07925383834, 8460143984, 9426005928',
+      email: 'info@gopidistributor.com',
+      terms: 'Bill No. is must while returning EXP. Products\nE.&.O.E.',
       theme: 'blue',
-      invoiceTemplate: 'standard'
+      invoiceTemplate: 'authentic'
     });
   }
 };
