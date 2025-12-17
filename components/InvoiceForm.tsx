@@ -70,18 +70,21 @@ export const InvoiceForm: React.FC = () => {
     const taxableValue = baseAmount - discountAmount;
     
     // GST Splitting Logic
-    const sellerStateCode = prof?.gstin?.substring(0, 2) || '24'; // Default to Gujarat
-    const buyerStateCode = party?.gstin?.substring(0, 2) || sellerStateCode;
+    // Seller State Code (Gujarat is 24)
+    const sellerStateCode = prof?.gstin?.trim().substring(0, 2) || '24';
+    // Buyer State Code (Default to seller state for cash sale/retail)
+    const buyerStateCode = party?.gstin?.trim().substring(0, 2) || sellerStateCode;
+    
     const isInterState = sellerStateCode !== buyerStateCode;
-
-    const totalTax = (taxableValue * item.gstRate) / 100;
+    const totalTaxRate = item.gstRate;
+    const totalTaxAmount = (taxableValue * totalTaxRate) / 100;
     
     let sgst = 0, cgst = 0, igst = 0;
     if (isInterState) {
-      igst = totalTax;
+      igst = totalTaxAmount;
     } else {
-      sgst = totalTax / 2;
-      cgst = totalTax / 2;
+      sgst = totalTaxAmount / 2;
+      cgst = totalTaxAmount / 2;
     }
 
     return {
@@ -90,7 +93,7 @@ export const InvoiceForm: React.FC = () => {
       sgstAmount: sgst,
       cgstAmount: cgst,
       igstAmount: igst,
-      totalAmount: taxableValue + totalTax
+      totalAmount: taxableValue + totalTaxAmount
     };
   };
 
@@ -132,17 +135,29 @@ export const InvoiceForm: React.FC = () => {
     };
 
     try {
-      await (db as any).transaction('rw', [db.invoices, db.products], async () => {
+      await db.transaction('rw', [db.invoices, db.products], async () => {
         await db.invoices.add(invoice);
         for (const item of items) {
           const product = await db.products.get(item.productId);
-          if (product) await db.products.update(item.productId, { stock: product.stock - (item.quantity + item.freeQuantity) });
+          if (product) {
+            // Update stock AND auto-save edited batch/mrp back to the product master
+            await db.products.update(item.productId, { 
+              stock: product.stock - (item.quantity + item.freeQuantity),
+              batch: item.batch,
+              mrp: item.mrp
+            });
+          }
         }
       });
-      toast.success('Invoice Saved');
-      if (window.confirm('Print this invoice?')) await generateInvoicePDF(invoice, profile?.invoiceTemplate || 'authentic');
+      toast.success('Invoice Saved Successfully');
+      if (window.confirm('Do you want to print this invoice now?')) {
+        await generateInvoicePDF(invoice, profile?.invoiceTemplate || 'authentic');
+      }
       navigate('/invoices');
-    } catch (e) { toast.error('Save failed'); }
+    } catch (e) { 
+      console.error(e);
+      toast.error('Save failed. Please check database connectivity.');
+    }
   };
 
   return (
@@ -169,7 +184,7 @@ export const InvoiceForm: React.FC = () => {
                     </div>
                   )}
                 </div>
-                {selectedParty && <div className="p-3 bg-blue-50 rounded-xl text-xs space-y-1"><div><span className="font-bold">GST:</span> {selectedParty.gstin}</div><div><span className="font-bold">State:</span> {selectedParty.gstin?.substring(0,2) || 'Local'}</div></div>}
+                {selectedParty && <div className="p-3 bg-blue-50 rounded-xl text-xs space-y-1"><div><span className="font-bold">GST:</span> {selectedParty.gstin}</div><div><span className="font-bold">State Code:</span> {selectedParty.gstin?.substring(0,2) || '24'}</div></div>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -185,7 +200,7 @@ export const InvoiceForm: React.FC = () => {
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
                   <input type="text" className="w-full pl-10 pr-4 py-2 bg-slate-50 rounded-xl" placeholder="Search medicines by name or batch..." value={productSearch} onChange={e => {setProductSearch(e.target.value); setShowProductDropdown(true);}} />
-                  {showProductDropdown && productSearch && <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-2xl border z-50">{products?.map(p => <div key={p.id} onClick={() => addItem(p)} className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 flex justify-between"><div><div className="font-bold">{p.name}</div><div className="text-xs text-slate-500">Batch: {p.batch} | Exp: {p.expiry} | Stock: {p.stock}</div></div><div className="text-right font-bold">₹{p.saleRate}</div></div>)}</div>}
+                  {showProductDropdown && productSearch && <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-2xl border z-50 max-h-60 overflow-y-auto">{products?.map(p => <div key={p.id} onClick={() => addItem(p)} className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 flex justify-between"><div><div className="font-bold">{p.name}</div><div className="text-xs text-slate-500">Batch: {p.batch} | Exp: {p.expiry} | Stock: {p.stock}</div></div><div className="text-right font-bold">₹{p.saleRate}</div></div>)}</div>}
                 </div>
               </div>
               <div className="overflow-x-auto custom-scrollbar">
@@ -197,7 +212,7 @@ export const InvoiceForm: React.FC = () => {
                     {items.map((item, idx) => (
                       <tr key={idx} className="hover:bg-slate-50">
                         <td className="p-3 font-bold">{item.name}</td>
-                        <td className="p-2 font-mono">{item.batch}</td>
+                        <td className="p-2"><input type="text" className="w-24 bg-white border border-slate-200 rounded p-1 font-mono uppercase" value={item.batch} onChange={e => updateItem(idx, 'batch', e.target.value)} /></td>
                         <td className="p-2"><input type="number" step="0.01" className="w-16 bg-white border border-slate-200 rounded p-1" value={item.mrp} onChange={e => updateItem(idx, 'mrp', parseFloat(e.target.value)||0)} /></td>
                         <td className="p-2"><input type="number" className="w-12 bg-blue-50 rounded p-1 font-bold text-center" value={item.quantity} onChange={e => updateItem(idx, 'quantity', parseInt(e.target.value)||0)} /></td>
                         <td className="p-2"><input type="number" className="w-12 bg-orange-50 rounded p-1 text-center" value={item.freeQuantity} onChange={e => updateItem(idx, 'freeQuantity', parseInt(e.target.value)||0)} /></td>
@@ -208,7 +223,7 @@ export const InvoiceForm: React.FC = () => {
                         <td className="p-2"><button onClick={() => setItems(items.filter((_,i)=>i!==idx))} className="text-slate-300 hover:text-red-500"><Trash2 className="w-4 h-4"/></button></td>
                       </tr>
                     ))}
-                    {items.length === 0 && <tr><td colSpan={10} className="p-12 text-center text-slate-400">No items added to bill yet.</td></tr>}
+                    {items.length === 0 && <tr><td colSpan={10} className="p-12 text-center text-slate-400 italic">No products added. Start by searching above.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -223,7 +238,7 @@ export const InvoiceForm: React.FC = () => {
               {totalIGST > 0 && <div className="flex justify-between items-center opacity-70 text-sm"><span>IGST</span><span>₹{totalIGST.toFixed(2)}</span></div>}
               <div className="h-px bg-white/10"></div>
               <div className="flex justify-between items-end"><span className="font-bold">Grand Total</span><span className="text-4xl font-bold text-green-400">₹{Math.round(grandTotal).toFixed(2)}</span></div>
-              <button onClick={handleSave} className="w-full py-4 bg-white text-slate-900 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all flex items-center justify-center gap-2 mt-4"><Printer className="w-5 h-5" /> Save & Print</button>
+              <button onClick={handleSave} className="w-full py-4 bg-white text-slate-900 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all flex items-center justify-center gap-2 mt-4 shadow-lg"><Printer className="w-5 h-5" /> Save & Print</button>
            </div>
            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
               <label className="text-xs font-bold text-slate-400 block mb-2">Invoice Date</label>

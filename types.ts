@@ -17,6 +17,8 @@ export interface CompanyProfile {
   gstin: string;
   dlNo1: string; 
   dlNo2: string; 
+  dlNo3?: string;
+  dlNo4?: string;
   phone: string;
   email: string;
   terms: string;

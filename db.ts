@@ -1,8 +1,9 @@
 
-// Fix: Use default import for Dexie to ensure proper inheritance of methods like 'version'.
-import Dexie, { Table } from 'dexie';
+import { Dexie, type Table } from 'dexie';
 import { Product, Party, Invoice, CompanyProfile } from './types';
 
+// Extend Dexie class for better type safety and method access
+// Using named import { Dexie } ensures proper inheritance in TypeScript environments.
 export class AppDatabase extends Dexie {
   products!: Table<Product>;
   parties!: Table<Party>;
@@ -11,7 +12,7 @@ export class AppDatabase extends Dexie {
 
   constructor() {
     super('GopiDistributorsDB');
-    // The version() method is inherited from Dexie and used to define the database schema.
+    // Fix: Using this.version() is correct when AppDatabase correctly extends the Dexie class.
     this.version(1).stores({
       products: '++id, name, hsn, batch',
       parties: '++id, name, gstin',
@@ -29,15 +30,19 @@ export const seedDatabase = async () => {
     await db.settings.add({
       companyName: 'GOPI DISTRIBUTOR',
       addressLine1: '74/20/4, Navyug Colony',
-      addressLine2: 'Bhulabhai Park Crossroad, Ahmedabad-22 Ahmedabad',
+      addressLine2: 'Bhulabhai Park Crossroad, Ahmedabad–22',
       gstin: '24AADPO7411Q1ZE',
-      dlNo1: 'GJ-ADC-AA/1946, GJ-ADC-AA/4967',
-      dlNo2: 'GJ-ADC-AA/1953, GJ-ADC-AA/4856',
-      phone: '07925383834, 8460143984, 9426005928',
+      dlNo1: 'GJ-ADC-AA/1946',
+      dlNo2: 'GJ-ADC-AA/4967',
+      dlNo3: 'GJ-ADC-AA/1953',
+      dlNo4: 'GJ-ADC-AA/4856',
+      phone: '07925383834, 8460143984',
       email: 'info@gopidistributor.com',
       terms: 'Bill No. is must while returning EXP. Products\nE.&.O.E.',
       theme: 'blue',
-      invoiceTemplate: 'authentic'
+      invoiceTemplate: 'authentic',
+      useDefaultGST: true,
+      defaultGSTRate: 5
     });
   }
 };

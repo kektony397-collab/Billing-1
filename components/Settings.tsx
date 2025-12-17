@@ -78,26 +78,19 @@ export const Settings: React.FC = () => {
         </section>
 
         <section className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-           <div className="flex items-center gap-2 mb-6"><LayoutTemplate className="w-5 h-5" /><h3 className="text-xl font-bold">Invoice Design</h3></div>
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {['standard', 'modern', 'thermal', 'authentic'].map(t => (
-                <label key={t} className="cursor-pointer border-2 border-slate-200 rounded-xl p-4 hover:border-blue-400 has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50 transition-all">
-                  <input type="radio" {...register('invoiceTemplate')} value={t} className="hidden" />
-                  <div className="font-bold mb-1 capitalize">{t}</div>
-                  <div className="text-xs text-slate-500 capitalize">{t === 'authentic' ? 'Exact replica of your image' : `Basic ${t} style`}</div>
-                </label>
-              ))}
-           </div>
-        </section>
-
-        <section className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
           <div className="flex items-center gap-2 mb-6"><Building2 className="w-5 h-5" /><h3 className="text-xl font-bold">Company Details</h3></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="col-span-1 md:col-span-2"><label className="block text-sm font-semibold mb-1">Company Name</label><input {...register('companyName', { required: true })} className="w-full rounded-xl border px-4 py-3" /></div>
             <div><label className="block text-sm font-medium mb-1">GSTIN</label><input {...register('gstin')} className="w-full rounded-xl border px-4 py-3" /></div>
             <div><label className="block text-sm font-medium mb-1">Phone</label><input {...register('phone')} className="w-full rounded-xl border px-4 py-3" /></div>
-            <div><label className="block text-sm font-medium mb-1">DL No. 1</label><input {...register('dlNo1')} className="w-full rounded-xl border px-4 py-3" /></div>
-            <div><label className="block text-sm font-medium mb-1">DL No. 2</label><input {...register('dlNo2')} className="w-full rounded-xl border px-4 py-3" /></div>
+            
+            <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-4">
+              <div><label className="block text-sm font-medium mb-1">Drug Lic. 1</label><input {...register('dlNo1')} className="w-full rounded-xl border px-4 py-3" /></div>
+              <div><label className="block text-sm font-medium mb-1">Drug Lic. 2</label><input {...register('dlNo2')} className="w-full rounded-xl border px-4 py-3" /></div>
+              <div><label className="block text-sm font-medium mb-1">Drug Lic. 3</label><input {...register('dlNo3')} className="w-full rounded-xl border px-4 py-3" /></div>
+              <div><label className="block text-sm font-medium mb-1">Drug Lic. 4</label><input {...register('dlNo4')} className="w-full rounded-xl border px-4 py-3" /></div>
+            </div>
+
              <div className="col-span-1 md:col-span-2"><label className="block text-sm font-medium mb-1">Address 1</label><input {...register('addressLine1')} className="w-full rounded-xl border px-4 py-3" /></div>
             <div className="col-span-1 md:col-span-2"><label className="block text-sm font-medium mb-1">Address 2</label><input {...register('addressLine2')} className="w-full rounded-xl border px-4 py-3" /></div>
             <div className="col-span-1 md:col-span-2"><label className="block text-sm font-medium mb-1">Invoice Terms</label><textarea {...register('terms')} rows={3} className="w-full rounded-xl border px-4 py-3" /></div>
