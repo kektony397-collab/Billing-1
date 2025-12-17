@@ -1,11 +1,11 @@
 
-import Dexie from 'dexie';
+import { Dexie } from 'dexie';
 import type { Table } from 'dexie';
 import { Product, Party, Invoice, CompanyProfile } from './types';
 
 /**
  * AppDatabase class extending Dexie to manage the local database.
- * Using default import for Dexie ensures proper TypeScript inheritance for inherited methods.
+ * Using named import for Dexie ensures proper TypeScript inheritance for inherited methods.
  */
 export class AppDatabase extends Dexie {
   products!: Table<Product>;

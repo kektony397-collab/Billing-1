@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Party, Product, InvoiceItem, Invoice, CompanyProfile } from '../types';
-import { Search, Trash2, Printer, ShoppingBag, Truck, User, TruckIcon, ClipboardList } from 'lucide-react';
+import { Search, Trash2, Printer, ShoppingBag, Truck, User, TruckIcon, ClipboardList, ShoppingCart } from 'lucide-react';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -131,7 +131,7 @@ export const InvoiceForm: React.FC = () => {
     };
 
     try {
-      // transaction() is an instance method inherited from the Dexie base class
+      // db inherits transaction from Dexie
       await db.transaction('rw', [db.invoices, db.products], async () => {
         await db.invoices.add(invoice);
         for (const item of items) {
@@ -163,7 +163,10 @@ export const InvoiceForm: React.FC = () => {
             <button onClick={() => setInvoiceType('WHOLESALE')} className={`flex items-center px-6 py-3 rounded-xl font-bold transition-all ${invoiceType === 'WHOLESALE' ? 'bg-white shadow-md text-blue-600' : 'text-slate-500'}`}><Truck className="w-5 h-5 mr-2" /> Wholesale</button>
             <button onClick={() => setInvoiceType('RETAIL')} className={`flex items-center px-6 py-3 rounded-xl font-bold transition-all ${invoiceType === 'RETAIL' ? 'bg-white shadow-md text-green-600' : 'text-slate-500'}`}><ShoppingBag className="w-5 h-5 mr-2" /> Retail</button>
          </div>
-         <div className="text-right"><div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Invoice No</div><div className="text-2xl font-mono font-bold text-slate-800">{invoiceNo}</div></div>
+         <div className="text-right">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Invoice No</div>
+            <div className="text-2xl font-mono font-bold text-slate-800">{invoiceNo}</div>
+         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -173,21 +176,41 @@ export const InvoiceForm: React.FC = () => {
                 <label className="text-sm font-bold text-slate-500">Purchaser Details</label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                  <input type="text" className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-xl outline-none" placeholder="Search Party..." value={selectedParty ? selectedParty.name : partySearch} onChange={(e) => {setPartySearch(e.target.value); setSelectedParty(null); setShowPartyDropdown(true);}} />
+                  <input 
+                    type="text" 
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 rounded-xl outline-none border border-transparent focus:border-blue-500 transition-all font-medium" 
+                    placeholder="Search Party..." 
+                    value={selectedParty ? selectedParty.name : partySearch} 
+                    onChange={(e) => {setPartySearch(e.target.value); setSelectedParty(null); setShowPartyDropdown(true);}} 
+                  />
                   {showPartyDropdown && !selectedParty && partySearch && (
-                    <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-xl border z-50 overflow-hidden">
-                      {parties?.map(p => <div key={p.id} onClick={() => {setSelectedParty(p); setShowPartyDropdown(false);}} className="p-4 hover:bg-blue-50 cursor-pointer border-b last:border-0"><div className="font-bold">{p.name}</div><div className="text-xs text-slate-500">{p.address} | GST: {p.gstin}</div></div>)}
+                    <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 z-50 overflow-hidden">
+                      {parties?.map(p => (
+                        <div 
+                          key={p.id} 
+                          onClick={() => {setSelectedParty(p); setShowPartyDropdown(false); setPartySearch('');}} 
+                          className="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0"
+                        >
+                          <div className="font-bold text-slate-800">{p.name}</div>
+                          <div className="text-xs text-slate-500">{p.address} | GST: {p.gstin}</div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-                {selectedParty && <div className="p-3 bg-blue-50 rounded-xl text-xs space-y-1"><div><span className="font-bold">GST:</span> {selectedParty.gstin}</div><div><span className="font-bold">State Code:</span> {selectedParty.gstin?.substring(0,2) || '24'}</div></div>}
+                {selectedParty && (
+                  <div className="p-3 bg-blue-50/50 rounded-xl text-xs space-y-1 border border-blue-100 animate-in slide-in-from-top-2">
+                    <div className="flex justify-between"><span><span className="font-bold text-blue-800">GST:</span> {selectedParty.gstin}</span> <span><span className="font-bold text-blue-800">Code:</span> {selectedParty.gstin?.substring(0,2) || '24'}</span></div>
+                    <div><span className="font-bold text-blue-800">Address:</span> {selectedParty.address}</div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2"><label className="text-xs font-bold text-slate-400">Logistics Information</label></div>
-                <div className="relative"><TruckIcon className="absolute left-3 top-3 w-4 h-4 text-slate-400" /><input type="text" value={vehicleNo} onChange={e => setVehicleNo(e.target.value)} className="w-full pl-10 py-2.5 bg-slate-50 rounded-lg text-sm" placeholder="Vehicle No." /></div>
-                <div className="relative"><ClipboardList className="absolute left-3 top-3 w-4 h-4 text-slate-400" /><input type="text" value={grNo} onChange={e => setGrNo(e.target.value)} className="w-full pl-10 py-2.5 bg-slate-50 rounded-lg text-sm" placeholder="GR No." /></div>
-                <div className="col-span-2"><input type="text" value={transport} onChange={e => setTransport(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 rounded-lg text-sm" placeholder="Transport Name" /></div>
+                <div className="col-span-2"><label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Logistics & Transportation</label></div>
+                <div className="relative"><TruckIcon className="absolute left-3 top-3 w-4 h-4 text-slate-400" /><input type="text" value={vehicleNo} onChange={e => setVehicleNo(e.target.value)} className="w-full pl-10 py-2.5 bg-slate-50 rounded-xl text-sm border border-transparent focus:border-blue-300 outline-none" placeholder="Vehicle No." /></div>
+                <div className="relative"><ClipboardList className="absolute left-3 top-3 w-4 h-4 text-slate-400" /><input type="text" value={grNo} onChange={e => setGrNo(e.target.value)} className="w-full pl-10 py-2.5 bg-slate-50 rounded-xl text-sm border border-transparent focus:border-blue-300 outline-none" placeholder="GR No." /></div>
+                <div className="col-span-2"><input type="text" value={transport} onChange={e => setTransport(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-sm border border-transparent focus:border-blue-300 outline-none" placeholder="Transport Name" /></div>
               </div>
            </div>
 
@@ -195,31 +218,66 @@ export const InvoiceForm: React.FC = () => {
               <div className="p-4 border-b border-slate-100">
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
-                  <input type="text" className="w-full pl-10 pr-4 py-2 bg-slate-50 rounded-xl" placeholder="Search medicines by name or batch..." value={productSearch} onChange={e => {setProductSearch(e.target.value); setShowProductDropdown(true);}} />
-                  {showProductDropdown && productSearch && <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-2xl border z-50 max-h-60 overflow-y-auto">{products?.map(p => <div key={p.id} onClick={() => addItem(p)} className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 flex justify-between"><div><div className="font-bold">{p.name}</div><div className="text-xs text-slate-500">Batch: {p.batch} | Exp: {p.expiry} | Stock: {p.stock}</div></div><div className="text-right font-bold">₹{p.saleRate}</div></div>)}</div>}
+                  <input 
+                    type="text" 
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-100 transition-all" 
+                    placeholder="Search medicines by name, batch or HSN..." 
+                    value={productSearch} 
+                    onChange={e => {setProductSearch(e.target.value); setShowProductDropdown(true);}} 
+                  />
+                  {showProductDropdown && productSearch && (
+                    <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 max-h-80 overflow-y-auto">
+                      {products?.map(p => (
+                        <div 
+                          key={p.id} 
+                          onClick={() => addItem(p)} 
+                          className="p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 flex justify-between items-center"
+                        >
+                          <div>
+                            <div className="font-bold text-slate-800">{p.name}</div>
+                            <div className="text-[10px] text-slate-500 font-mono uppercase">Batch: {p.batch} | Exp: {p.expiry} | HSN: {p.hsn}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-blue-600">₹{p.saleRate}</div>
+                            <div className="text-[10px] text-slate-400">Stk: {p.stock}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full text-[11px] text-left">
-                  <thead className="bg-slate-50 font-bold uppercase text-slate-500 whitespace-nowrap">
-                    <tr><th className="p-3">Item Name</th><th className="p-2">Batch</th><th className="p-2">MRP</th><th className="p-2">Qty</th><th className="p-2">Free</th><th className="p-2">Rate</th><th className="p-2">Disc%</th><th className="p-2">GST%</th><th className="p-3 text-right">Total</th><th className="p-2"></th></tr>
+                  <thead className="bg-slate-50/50 font-bold uppercase text-slate-500 whitespace-nowrap">
+                    <tr><th className="p-3">Item Description</th><th className="p-2">Batch</th><th className="p-2">MRP</th><th className="p-2 text-center">Qty</th><th className="p-2 text-center">Free</th><th className="p-2">Rate</th><th className="p-2 text-center">Disc%</th><th className="p-2 text-center">GST%</th><th className="p-3 text-right">Total</th><th className="p-2"></th></tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {items.map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-3 font-bold">{item.name}</td>
-                        <td className="p-2"><input type="text" className="w-20 bg-white border border-slate-200 rounded p-1 font-mono uppercase" value={item.batch} onChange={e => updateItem(idx, 'batch', e.target.value)} /></td>
-                        <td className="p-2"><input type="number" step="0.01" className="w-14 bg-white border border-slate-200 rounded p-1" value={item.mrp} onChange={e => updateItem(idx, 'mrp', parseFloat(e.target.value)||0)} /></td>
-                        <td className="p-2"><input type="number" className="w-10 bg-blue-50 rounded p-1 font-bold text-center" value={item.quantity} onChange={e => updateItem(idx, 'quantity', parseInt(e.target.value)||0)} /></td>
-                        <td className="p-2"><input type="number" className="w-10 bg-orange-50 rounded p-1 text-center" value={item.freeQuantity} onChange={e => updateItem(idx, 'freeQuantity', parseInt(e.target.value)||0)} /></td>
-                        <td className="p-2"><input type="number" step="0.01" className="w-14 bg-white border border-slate-200 rounded p-1" value={item.saleRate} onChange={e => updateItem(idx, 'saleRate', parseFloat(e.target.value)||0)} /></td>
-                        <td className="p-2"><input type="number" className="w-10 bg-white border border-slate-200 rounded p-1" value={item.discountPercent} onChange={e => updateItem(idx, 'discountPercent', parseFloat(e.target.value)||0)} /></td>
-                        <td className="p-2 text-center font-medium">{item.gstRate}%</td>
-                        <td className="p-3 text-right font-bold text-slate-800">₹{item.totalAmount.toFixed(2)}</td>
-                        <td className="p-2"><button onClick={() => setItems(items.filter((_,i)=>i!==idx))} className="text-slate-300 hover:text-red-500"><Trash2 className="w-4 h-4"/></button></td>
+                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="p-3 font-bold text-slate-800 max-w-[150px] truncate">{item.name}</td>
+                        <td className="p-2"><input type="text" className="w-20 bg-white border border-slate-200 rounded p-1 font-mono uppercase text-xs" value={item.batch} onChange={e => updateItem(idx, 'batch', e.target.value)} /></td>
+                        <td className="p-2"><input type="number" step="0.01" className="w-14 bg-white border border-slate-200 rounded p-1 text-xs" value={item.mrp} onChange={e => updateItem(idx, 'mrp', parseFloat(e.target.value)||0)} /></td>
+                        <td className="p-2"><input type="number" className="w-10 bg-blue-50 rounded p-1 font-bold text-center text-xs" value={item.quantity} onChange={e => updateItem(idx, 'quantity', parseInt(e.target.value)||0)} /></td>
+                        <td className="p-2"><input type="number" className="w-10 bg-orange-50 rounded p-1 text-center text-xs" value={item.freeQuantity} onChange={e => updateItem(idx, 'freeQuantity', parseInt(e.target.value)||0)} /></td>
+                        <td className="p-2"><input type="number" step="0.01" className="w-16 bg-white border border-slate-200 rounded p-1 text-xs" value={item.saleRate} onChange={e => updateItem(idx, 'saleRate', parseFloat(e.target.value)||0)} /></td>
+                        <td className="p-2"><input type="number" className="w-10 bg-white border border-slate-200 rounded p-1 text-center text-xs" value={item.discountPercent} onChange={e => updateItem(idx, 'discountPercent', parseFloat(e.target.value)||0)} /></td>
+                        <td className="p-2 text-center font-bold text-slate-600">{item.gstRate}%</td>
+                        <td className="p-3 text-right font-bold text-slate-900">₹{item.totalAmount.toFixed(2)}</td>
+                        <td className="p-2 text-center"><button onClick={() => setItems(items.filter((_,i)=>i!==idx))} className="text-slate-300 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4"/></button></td>
                       </tr>
                     ))}
-                    {items.length === 0 && <tr><td colSpan={10} className="p-12 text-center text-slate-400 italic">No products added.</td></tr>}
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan={10} className="p-20 text-center">
+                          <div className="flex flex-col items-center opacity-20">
+                            {/* ShoppingCart icon added here */}
+                            <ShoppingCart className="w-12 h-12 mb-2" />
+                            <p className="italic font-medium">Add products to begin billing</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -227,16 +285,37 @@ export const InvoiceForm: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-           <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl space-y-4">
-              <div className="flex justify-between items-center opacity-70 text-sm"><span>Taxable Value</span><span>₹{totalTaxable.toFixed(2)}</span></div>
-              <div className="flex justify-between items-center opacity-70 text-sm"><span>GST Amount</span><span>₹{(totalCGST + totalSGST + totalIGST).toFixed(2)}</span></div>
-              <div className="h-px bg-white/10"></div>
-              <div className="flex justify-between items-end"><span className="font-bold">Grand Total</span><span className="text-4xl font-bold text-green-400">₹{Math.round(grandTotal).toFixed(2)}</span></div>
-              <button onClick={handleSave} className="w-full py-4 bg-white text-slate-900 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all flex items-center justify-center gap-2 mt-4 shadow-lg"><Printer className="w-5 h-5" /> Save & Print</button>
+           <div className="bg-slate-900 text-white p-6 rounded-[2.5rem] shadow-2xl space-y-4">
+              <div className="flex justify-between items-center opacity-60 text-xs uppercase tracking-widest font-bold"><span>Taxable Value</span><span>₹{totalTaxable.toFixed(2)}</span></div>
+              <div className="flex justify-between items-center opacity-60 text-xs uppercase tracking-widest font-bold"><span>GST Amount</span><span>₹{(totalCGST + totalSGST + totalIGST).toFixed(2)}</span></div>
+              <div className="h-px bg-white/10 my-2"></div>
+              <div className="flex justify-between items-end"><span className="font-bold text-sm">Grand Total</span><span className="text-4xl font-bold text-green-400">₹{Math.round(grandTotal).toFixed(2)}</span></div>
+              <div className="text-[10px] text-white/40 text-center pt-2">Rounded to nearest rupee</div>
+              <button 
+                onClick={handleSave} 
+                className="w-full py-5 bg-white text-slate-900 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all flex items-center justify-center gap-3 mt-4 shadow-xl active:scale-95"
+              >
+                <Printer className="w-6 h-6" /> Save & Print
+              </button>
            </div>
+           
            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-              <label className="text-xs font-bold text-slate-400 block mb-2">Invoice Date</label>
-              <input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} className="w-full bg-slate-50 p-3 rounded-xl outline-none font-medium" />
+              <label className="text-xs font-bold text-slate-400 block mb-2 uppercase tracking-widest">Invoice Date</label>
+              <input 
+                type="date" 
+                value={invoiceDate} 
+                onChange={e => setInvoiceDate(e.target.value)} 
+                className="w-full bg-slate-50 p-3 rounded-2xl outline-none font-bold text-slate-800 border border-transparent focus:border-blue-500" 
+              />
+           </div>
+
+           <div className="bg-blue-600 text-white p-6 rounded-3xl shadow-lg">
+             <h4 className="font-bold mb-2">Billing Tips</h4>
+             <ul className="text-xs space-y-2 opacity-80 list-disc pl-4">
+               <li>Double check <b>Batch No</b> and <b>Expiry</b> before printing.</li>
+               <li>Free quantity (Fr. Qty) does not affect the taxable amount.</li>
+               <li>Old MRP vs New MRP will both show on the final print.</li>
+             </ul>
            </div>
         </div>
       </div>
