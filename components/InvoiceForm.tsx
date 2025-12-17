@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
@@ -31,7 +32,7 @@ export const InvoiceForm: React.FC = () => {
     const genId = async () => {
       const count = await db.invoices.count();
       const typeCode = invoiceType === 'RETAIL' ? 'RET' : 'TI';
-      setInvoiceNo(`${typeCode}-${count + 65}`); 
+      setInvoiceNo(`${typeCode} -${count + 65}`); 
     };
     genId();
   }, [invoiceType]);
@@ -42,7 +43,6 @@ export const InvoiceForm: React.FC = () => {
       return;
     }
 
-    // Default GST check from profile
     const gstToUse = profile?.useDefaultGST ? (profile?.defaultGSTRate || 5) : product.gstRate;
 
     const newItem: InvoiceItem = {
@@ -69,10 +69,7 @@ export const InvoiceForm: React.FC = () => {
     const discountAmount = (baseAmount * item.discountPercent) / 100;
     const taxableValue = baseAmount - discountAmount;
     
-    // GST Splitting Logic
-    // Seller State Code (Gujarat is 24)
     const sellerStateCode = prof?.gstin?.trim().substring(0, 2) || '24';
-    // Buyer State Code (Default to seller state for cash sale/retail)
     const buyerStateCode = party?.gstin?.trim().substring(0, 2) || sellerStateCode;
     
     const isInterState = sellerStateCode !== buyerStateCode;
@@ -104,7 +101,6 @@ export const InvoiceForm: React.FC = () => {
     setItems(newItems);
   };
 
-  // Recalculate all items if party changes (for GST split update)
   useEffect(() => {
     if (items.length > 0) {
       setItems(items.map(it => calculateRow(it, selectedParty, profile)));
@@ -135,12 +131,12 @@ export const InvoiceForm: React.FC = () => {
     };
 
     try {
+      // transaction() is an instance method inherited from the Dexie base class
       await db.transaction('rw', [db.invoices, db.products], async () => {
         await db.invoices.add(invoice);
         for (const item of items) {
           const product = await db.products.get(item.productId);
           if (product) {
-            // Update stock AND auto-save edited batch/mrp back to the product master
             await db.products.update(item.productId, { 
               stock: product.stock - (item.quantity + item.freeQuantity),
               batch: item.batch,
@@ -150,13 +146,13 @@ export const InvoiceForm: React.FC = () => {
         }
       });
       toast.success('Invoice Saved Successfully');
-      if (window.confirm('Do you want to print this invoice now?')) {
+      if (window.confirm('Do you want to print this invoice?')) {
         await generateInvoicePDF(invoice, profile?.invoiceTemplate || 'authentic');
       }
       navigate('/invoices');
     } catch (e) { 
       console.error(e);
-      toast.error('Save failed. Please check database connectivity.');
+      toast.error('Save failed');
     }
   };
 
@@ -204,7 +200,7 @@ export const InvoiceForm: React.FC = () => {
                 </div>
               </div>
               <div className="overflow-x-auto custom-scrollbar">
-                <table className="w-full text-xs text-left">
+                <table className="w-full text-[11px] text-left">
                   <thead className="bg-slate-50 font-bold uppercase text-slate-500 whitespace-nowrap">
                     <tr><th className="p-3">Item Name</th><th className="p-2">Batch</th><th className="p-2">MRP</th><th className="p-2">Qty</th><th className="p-2">Free</th><th className="p-2">Rate</th><th className="p-2">Disc%</th><th className="p-2">GST%</th><th className="p-3 text-right">Total</th><th className="p-2"></th></tr>
                   </thead>
@@ -212,18 +208,18 @@ export const InvoiceForm: React.FC = () => {
                     {items.map((item, idx) => (
                       <tr key={idx} className="hover:bg-slate-50">
                         <td className="p-3 font-bold">{item.name}</td>
-                        <td className="p-2"><input type="text" className="w-24 bg-white border border-slate-200 rounded p-1 font-mono uppercase" value={item.batch} onChange={e => updateItem(idx, 'batch', e.target.value)} /></td>
-                        <td className="p-2"><input type="number" step="0.01" className="w-16 bg-white border border-slate-200 rounded p-1" value={item.mrp} onChange={e => updateItem(idx, 'mrp', parseFloat(e.target.value)||0)} /></td>
-                        <td className="p-2"><input type="number" className="w-12 bg-blue-50 rounded p-1 font-bold text-center" value={item.quantity} onChange={e => updateItem(idx, 'quantity', parseInt(e.target.value)||0)} /></td>
-                        <td className="p-2"><input type="number" className="w-12 bg-orange-50 rounded p-1 text-center" value={item.freeQuantity} onChange={e => updateItem(idx, 'freeQuantity', parseInt(e.target.value)||0)} /></td>
-                        <td className="p-2"><input type="number" step="0.01" className="w-16 bg-white border border-slate-200 rounded p-1" value={item.saleRate} onChange={e => updateItem(idx, 'saleRate', parseFloat(e.target.value)||0)} /></td>
-                        <td className="p-2"><input type="number" className="w-12 bg-white border border-slate-200 rounded p-1" value={item.discountPercent} onChange={e => updateItem(idx, 'discountPercent', parseFloat(e.target.value)||0)} /></td>
+                        <td className="p-2"><input type="text" className="w-20 bg-white border border-slate-200 rounded p-1 font-mono uppercase" value={item.batch} onChange={e => updateItem(idx, 'batch', e.target.value)} /></td>
+                        <td className="p-2"><input type="number" step="0.01" className="w-14 bg-white border border-slate-200 rounded p-1" value={item.mrp} onChange={e => updateItem(idx, 'mrp', parseFloat(e.target.value)||0)} /></td>
+                        <td className="p-2"><input type="number" className="w-10 bg-blue-50 rounded p-1 font-bold text-center" value={item.quantity} onChange={e => updateItem(idx, 'quantity', parseInt(e.target.value)||0)} /></td>
+                        <td className="p-2"><input type="number" className="w-10 bg-orange-50 rounded p-1 text-center" value={item.freeQuantity} onChange={e => updateItem(idx, 'freeQuantity', parseInt(e.target.value)||0)} /></td>
+                        <td className="p-2"><input type="number" step="0.01" className="w-14 bg-white border border-slate-200 rounded p-1" value={item.saleRate} onChange={e => updateItem(idx, 'saleRate', parseFloat(e.target.value)||0)} /></td>
+                        <td className="p-2"><input type="number" className="w-10 bg-white border border-slate-200 rounded p-1" value={item.discountPercent} onChange={e => updateItem(idx, 'discountPercent', parseFloat(e.target.value)||0)} /></td>
                         <td className="p-2 text-center font-medium">{item.gstRate}%</td>
                         <td className="p-3 text-right font-bold text-slate-800">₹{item.totalAmount.toFixed(2)}</td>
                         <td className="p-2"><button onClick={() => setItems(items.filter((_,i)=>i!==idx))} className="text-slate-300 hover:text-red-500"><Trash2 className="w-4 h-4"/></button></td>
                       </tr>
                     ))}
-                    {items.length === 0 && <tr><td colSpan={10} className="p-12 text-center text-slate-400 italic">No products added. Start by searching above.</td></tr>}
+                    {items.length === 0 && <tr><td colSpan={10} className="p-12 text-center text-slate-400 italic">No products added.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -233,9 +229,7 @@ export const InvoiceForm: React.FC = () => {
         <div className="space-y-6">
            <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl space-y-4">
               <div className="flex justify-between items-center opacity-70 text-sm"><span>Taxable Value</span><span>₹{totalTaxable.toFixed(2)}</span></div>
-              {totalCGST > 0 && <div className="flex justify-between items-center opacity-70 text-sm"><span>CGST</span><span>₹{totalCGST.toFixed(2)}</span></div>}
-              {totalSGST > 0 && <div className="flex justify-between items-center opacity-70 text-sm"><span>SGST</span><span>₹{totalSGST.toFixed(2)}</span></div>}
-              {totalIGST > 0 && <div className="flex justify-between items-center opacity-70 text-sm"><span>IGST</span><span>₹{totalIGST.toFixed(2)}</span></div>}
+              <div className="flex justify-between items-center opacity-70 text-sm"><span>GST Amount</span><span>₹{(totalCGST + totalSGST + totalIGST).toFixed(2)}</span></div>
               <div className="h-px bg-white/10"></div>
               <div className="flex justify-between items-end"><span className="font-bold">Grand Total</span><span className="text-4xl font-bold text-green-400">₹{Math.round(grandTotal).toFixed(2)}</span></div>
               <button onClick={handleSave} className="w-full py-4 bg-white text-slate-900 rounded-2xl font-bold text-lg hover:bg-blue-50 transition-all flex items-center justify-center gap-2 mt-4 shadow-lg"><Printer className="w-5 h-5" /> Save & Print</button>

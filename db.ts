@@ -1,9 +1,12 @@
 
-import { Dexie, type Table } from 'dexie';
+import Dexie from 'dexie';
+import type { Table } from 'dexie';
 import { Product, Party, Invoice, CompanyProfile } from './types';
 
-// Extend Dexie class for better type safety and method access
-// Using named import { Dexie } ensures proper inheritance in TypeScript environments.
+/**
+ * AppDatabase class extending Dexie to manage the local database.
+ * Using default import for Dexie ensures proper TypeScript inheritance for inherited methods.
+ */
 export class AppDatabase extends Dexie {
   products!: Table<Product>;
   parties!: Table<Party>;
@@ -12,7 +15,8 @@ export class AppDatabase extends Dexie {
 
   constructor() {
     super('GopiDistributorsDB');
-    // Fix: Using this.version() is correct when AppDatabase correctly extends the Dexie class.
+    // Define the database schema version and tables
+    // version() is an instance method inherited from Dexie
     this.version(1).stores({
       products: '++id, name, hsn, batch',
       parties: '++id, name, gstin',
