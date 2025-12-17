@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as XLSX from 'xlsx';
 import { db } from '../db';
 import { Product, GSTRate } from '../types';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Search, Plus, Upload, Trash2, Edit2, X, Loader2, CheckCircle2 } from 'lucide-react';
+import { Search, Plus, Upload, Trash2, Edit2, X, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
 
@@ -60,17 +59,6 @@ export const Inventory: React.FC = () => {
     } catch (e) { toast.error('Error saving product'); }
   };
 
-  const getValue = (row: any, keys: string[]) => {
-    const rowKeys = Object.keys(row);
-    for (const key of keys) {
-      const found = rowKeys.find(k => k.toLowerCase().trim() === key.toLowerCase().trim());
-      if (found) return row[found];
-    }
-    return undefined;
-  };
-
-  const parseNum = (v: any) => isNaN(parseFloat(v)) ? 0 : parseFloat(v);
-
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -97,24 +85,23 @@ export const Inventory: React.FC = () => {
 
         for (let i = 0; i < totalRows; i += CHUNK_SIZE) {
           const chunk = data.slice(i, i + CHUNK_SIZE).map((row: any) => ({
-            name: String(getValue(row, ['Name', 'Item', 'Medicine']) || 'Item'),
-            batch: String(getValue(row, ['Batch']) || 'N/A'),
-            expiry: String(getValue(row, ['Expiry', 'Exp']) || '2026-01-01'),
-            hsn: String(getValue(row, ['HSN']) || '3004'),
-            gstRate: parseNum(getValue(row, ['GST', 'Tax'])),
-            mrp: parseNum(getValue(row, ['MRP', 'New MRP'])),
-            oldMrp: parseNum(getValue(row, ['Old MRP'])),
-            purchaseRate: parseNum(getValue(row, ['Purchase Rate'])),
-            saleRate: parseNum(getValue(row, ['Sale Rate', 'Rate'])),
-            stock: parseNum(getValue(row, ['Stock', 'Qty'])),
-            manufacturer: String(getValue(row, ['Manufacturer', 'Mfg']) || ''),
+            name: String(row.Name || row.Item || row.Medicine || 'Item'),
+            batch: String(row.Batch || 'N/A'),
+            expiry: String(row.Expiry || row.Exp || '2026-01-01'),
+            hsn: String(row.HSN || '3004'),
+            gstRate: isNaN(parseFloat(row.GST)) ? 12 : parseFloat(row.GST),
+            mrp: isNaN(parseFloat(row.MRP)) ? 0 : parseFloat(row.MRP),
+            oldMrp: isNaN(parseFloat(row['Old MRP'])) ? 0 : parseFloat(row['Old MRP']),
+            purchaseRate: isNaN(parseFloat(row['Purchase Rate'])) ? 0 : parseFloat(row['Purchase Rate']),
+            saleRate: isNaN(parseFloat(row['Sale Rate'] || row.Rate)) ? 0 : parseFloat(row['Sale Rate'] || row.Rate),
+            stock: isNaN(parseFloat(row.Stock || row.Qty)) ? 0 : parseFloat(row.Stock || row.Qty),
+            manufacturer: String(row.Manufacturer || row.Mfg || ''),
           }));
 
           await db.products.bulkAdd(chunk);
           processed += chunk.length;
           setImportProgress(Math.round((processed / totalRows) * 100));
         }
-        
         toast.success(`Imported ${totalRows} products!`);
       } catch (err) {
         toast.error('Import failed');
@@ -131,7 +118,7 @@ export const Inventory: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Inventory Management</h2>
-          <p className="text-slate-500 text-sm">Store up to 1,00,000+ medicine records</p>
+          <p className="text-slate-500 text-sm">Efficient storage for 1,00,000+ medicine records</p>
         </div>
         <div className="flex gap-2">
           <label className="cursor-pointer flex items-center px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all font-medium">
@@ -178,9 +165,9 @@ export const Inventory: React.FC = () => {
                 <th className="px-4 py-5">Batch</th>
                 <th className="px-4 py-5">Exp</th>
                 <th className="px-4 py-5 text-right">Stock</th>
-                <th className="px-4 py-5 text-right">Old MRP</th>
-                <th className="px-4 py-5 text-right">New MRP</th>
+                <th className="px-4 py-5 text-right">MRP</th>
                 <th className="px-4 py-5 text-right">Rate</th>
+                <th className="px-4 py-5 text-center">GST %</th>
                 <th className="px-6 py-5 text-center">Actions</th>
               </tr>
             </thead>
@@ -195,9 +182,11 @@ export const Inventory: React.FC = () => {
                       {p.stock}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-right text-slate-400 line-through">₹{p.oldMrp || p.mrp}</td>
                   <td className="px-4 py-4 text-right font-bold text-slate-800">₹{p.mrp}</td>
                   <td className="px-4 py-4 text-right font-bold text-blue-600">₹{p.saleRate}</td>
+                  <td className="px-4 py-4 text-center">
+                    <span className="px-2 py-1 bg-slate-100 rounded-md font-medium">{p.gstRate}%</span>
+                  </td>
                   <td className="px-6 py-4 flex justify-center gap-2">
                     <button onClick={() => { setEditingProduct(p); setIsModalOpen(true); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><Edit2 className="w-4 h-4" /></button>
                     <button onClick={() => db.products.delete(p.id!)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
@@ -223,6 +212,19 @@ export const Inventory: React.FC = () => {
                   <input {...register('name', { required: true })} className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold" />
                 </div>
                 <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">GST Rate (%)</label>
+                  <select {...register('gstRate')} className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold">
+                    <option value={5}>5% (Basic)</option>
+                    <option value={12}>12% (Standard)</option>
+                    <option value={18}>18% (Luxury)</option>
+                    <option value={0}>0% (Exempt)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">HSN Code</label>
+                  <input {...register('hsn')} className="w-full bg-slate-50 border-none rounded-2xl p-4" />
+                </div>
+                <div>
                   <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Batch No.</label>
                   <input {...register('batch', { required: true })} className="w-full bg-slate-50 border-none rounded-2xl p-4 font-mono" />
                 </div>
@@ -231,20 +233,12 @@ export const Inventory: React.FC = () => {
                   <input {...register('expiry', { required: true })} className="w-full bg-slate-50 border-none rounded-2xl p-4" placeholder="MM/YY or YYYY-MM-DD" />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Old MRP</label>
-                  <input type="number" step="0.01" {...register('oldMrp')} className="w-full bg-slate-50 border-none rounded-2xl p-4" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">New MRP</label>
+                  <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">MRP</label>
                   <input type="number" step="0.01" {...register('mrp', { required: true })} className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold" />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Billing Rate</label>
                   <input type="number" step="0.01" {...register('saleRate', { required: true })} className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold text-blue-600" />
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Opening Stock</label>
-                  <input type="number" {...register('stock', { required: true })} className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold" />
                 </div>
               </div>
               <div className="flex justify-end gap-3 pt-6">

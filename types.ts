@@ -22,6 +22,8 @@ export interface CompanyProfile {
   terms: string;
   theme?: AppTheme;
   invoiceTemplate?: InvoiceTemplate;
+  useDefaultGST?: boolean;
+  defaultGSTRate?: number;
 }
 
 export interface Product {

@@ -10,7 +10,6 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-// Theme Config
 const themes: Record<AppTheme, { bg: string, sidebar: string, text: string, primary: string, accent: string }> = {
   blue: { bg: 'bg-slate-50', sidebar: 'bg-blue-600', text: 'text-slate-900', primary: 'text-blue-600', accent: 'bg-blue-100' },
   green: { bg: 'bg-stone-50', sidebar: 'bg-emerald-700', text: 'text-stone-900', primary: 'text-emerald-700', accent: 'bg-emerald-100' },
@@ -36,14 +35,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Apply theme to body
   useEffect(() => {
     document.body.className = currentTheme.bg + (isDark ? ' text-white' : ' text-slate-900');
   }, [currentTheme, isDark]);
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${currentTheme.bg}`}>
-      {/* Header */}
       <header className={`${currentTheme.sidebar} text-white shadow-xl sticky top-0 z-50 transition-colors duration-300`}>
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-18 py-3">
@@ -56,7 +53,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               </Link>
             </div>
             
-            {/* Desktop Nav */}
             <nav className="hidden md:flex space-x-1">
               {navItems.map((item) => (
                 <Link
@@ -75,7 +71,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               ))}
             </nav>
 
-            {/* Mobile Menu Button */}
             <div className="md:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -87,7 +82,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
 
-        {/* Mobile Nav */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-black/20 backdrop-blur-lg pb-4">
             <div className="px-2 pt-2 space-y-1">
@@ -114,19 +108,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         )}
       </header>
 
-      {/* Main Content */}
       <main className="flex-grow w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
 
-      {/* Footer */}
       <footer className={`${isDark ? 'bg-gray-800 border-t border-gray-700' : 'bg-white border-t border-slate-200'} py-8 mt-auto transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
+          <p className={`text-sm font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+            Created by Yash K Pathak
+          </p>
+          <p className={`text-sm font-medium mt-1 ${isDark ? 'text-gray-400' : 'text-slate-500'}`}>
             &copy; {new Date().getFullYear()} {profile?.companyName || 'Gopi Distributors'}
           </p>
           <p className={`text-xs mt-2 ${isDark ? 'text-gray-600' : 'text-slate-400'}`}>
-            Wholesale Billing System v2.0 • Android 16 Design
+            Wholesale Billing System v3.0 • High Performance Engine
           </p>
         </div>
       </footer>

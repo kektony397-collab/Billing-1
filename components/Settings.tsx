@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { db } from '../db';
-import { CompanyProfile, AppTheme, InvoiceTemplate } from '../types';
-import { Save, Building2, Palette, LayoutTemplate, Settings as SettingsIcon } from 'lucide-react';
+import { CompanyProfile, AppTheme } from '../types';
+import { Save, Building2, Palette, LayoutTemplate, Settings as SettingsIcon, Percent } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const Settings: React.FC = () => {
   const { register, handleSubmit, setValue, watch } = useForm<CompanyProfile>();
   const currentTheme = watch('theme');
+  const useDefaultGST = watch('useDefaultGST');
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -53,12 +54,26 @@ export const Settings: React.FC = () => {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         <section className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-           <div className="flex items-center gap-2 mb-6"><Palette className="w-5 h-5" /><h3 className="text-xl font-bold">App Appearance</h3></div>
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <ThemeOption value="blue" color="bg-blue-600" label="Ocean Blue" />
-              <ThemeOption value="green" color="bg-emerald-600" label="Nature Green" />
-              <ThemeOption value="purple" color="bg-purple-600" label="Royal Purple" />
-              <ThemeOption value="dark" color="bg-gray-900" label="Midnight Dark" />
+           <div className="flex items-center gap-2 mb-6"><Percent className="w-5 h-5" /><h3 className="text-xl font-bold">GST Configuration</h3></div>
+           <div className="space-y-6">
+              <label className="flex items-center cursor-pointer p-4 bg-slate-50 rounded-2xl border-2 border-transparent has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 transition-all">
+                <input type="checkbox" {...register('useDefaultGST')} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 mr-4" />
+                <div>
+                  <div className="font-bold text-slate-800">Force Default GST Rate</div>
+                  <div className="text-sm text-slate-500">Enable this to apply a fixed GST rate to every item on a new bill, overriding product settings.</div>
+                </div>
+              </label>
+
+              {useDefaultGST && (
+                <div className="animate-in slide-in-from-top-2">
+                   <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Default GST Rate (%)</label>
+                   <select {...register('defaultGSTRate')} className="w-full md:w-48 rounded-xl border-slate-200 border px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none">
+                      <option value={5}>5%</option>
+                      <option value={12}>12%</option>
+                      <option value={18}>18%</option>
+                   </select>
+                </div>
+              )}
            </div>
         </section>
 
@@ -89,7 +104,17 @@ export const Settings: React.FC = () => {
           </div>
         </section>
 
-        <div className="flex justify-end"><button type="submit" className="flex items-center px-8 py-4 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:scale-105 transition-all"><Save className="w-5 h-5 mr-2" /> Save Settings</button></div>
+        <section className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+           <div className="flex items-center gap-2 mb-6"><Palette className="w-5 h-5" /><h3 className="text-xl font-bold">App Appearance</h3></div>
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <ThemeOption value="blue" color="bg-blue-600" label="Ocean Blue" />
+              <ThemeOption value="green" color="bg-emerald-600" label="Nature Green" />
+              <ThemeOption value="purple" color="bg-purple-600" label="Royal Purple" />
+              <ThemeOption value="dark" color="bg-gray-900" label="Midnight Dark" />
+           </div>
+        </section>
+
+        <div className="flex justify-end sticky bottom-4"><button type="submit" className="flex items-center px-8 py-4 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:scale-105 transition-all"><Save className="w-5 h-5 mr-2" /> Save Settings</button></div>
       </form>
     </div>
   );

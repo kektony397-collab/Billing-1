@@ -1,6 +1,6 @@
 
-// Fix: Use named import { Dexie } instead of default import to ensure correct type inheritance of members like 'version'
-import { Dexie, Table } from 'dexie';
+// Fix: Use default import for Dexie to ensure proper inheritance of methods like 'version'.
+import Dexie, { Table } from 'dexie';
 import { Product, Party, Invoice, CompanyProfile } from './types';
 
 export class AppDatabase extends Dexie {
@@ -11,7 +11,7 @@ export class AppDatabase extends Dexie {
 
   constructor() {
     super('GopiDistributorsDB');
-    // Fix: The version method is correctly inherited from Dexie base class when using named imports
+    // The version() method is inherited from Dexie and used to define the database schema.
     this.version(1).stores({
       products: '++id, name, hsn, batch',
       parties: '++id, name, gstin',
